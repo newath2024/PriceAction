@@ -1,5 +1,5 @@
 //@version=5
-strategy("Enhanced Engulfing Strategy with SMA200 & EMA21", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+strategy("PriceAction_ver1 by Zhangjingyi", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
 
 // Inputs
 smaLength = input.int(200, title="SMA Length", minval=1)
