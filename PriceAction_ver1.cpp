@@ -13,11 +13,15 @@ ema21 = ta.ema(close, emaLength)
 // Define Engulfing Patterns
 bullishEngulfingFirst = (close[1] < open[1] and close[1] > open[2]) and (close > open and high > high[1] and close > open[1])
 bullishEngulfingSecond = close[3] < open[3] and (close[2] > open[2] and high[2] > high[3] and close[2] > open[3])
+bullishConditionFirst = (open[1] - close[1]) > (close-open)*0.3
+bullishConditionSecond = (open[3] - close[3]) > (close[2]-open[2])*0.3
+
 bearishEngulfingFirst = (close[1] > open[1] and close[1] < open[2]) and (close < open and close < open[1] and open > close[1])
 bearishEngulfingSecond = close[3] > open[3] and close[2] < open[2] and close[2] < open[3] and open[2] > close[3]
-
+bearishConditionFirst = (close[1] - open[1]) > (open-close)*0.3
+bearishConditionSecond = (close[3] - open[3]) > (open[2]-close[2])*0.3
 // Buy condition: Bullish Engulfing + price above EMA21
-buySignal = bullishEngulfingFirst and bullishEngulfingSecond and close > ema21
+buySignal = bullishEngulfingFirst and bullishEngulfingSecond and close > ema21 and bullishConditionFirst and bullishConditionSecond
 
 // Sell condition: Bearish Engulfing + price below EMA21
 sellSignal = bearishEngulfingFirst and bearishEngulfingSecond and close < ema21
