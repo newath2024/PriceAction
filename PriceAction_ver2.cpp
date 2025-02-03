@@ -5,17 +5,27 @@
 // 📌 It also includes the ability to draw Buy/Sell signals on the chart
 // 📌 The script is designed to work on the 1H timeframe for Forex pairs and 4H timeframe for Crypto pairs
 
-strategy("PriceAction_ver1 by Zhangjingyi", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
+strategy("PriceAction_ver2 by Zhangjingyi", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
 
 // 🟢 Input 
 smaLength = input.int(200, title="SMA Length", minval=1)
 emaLength = input.int(21, title="EMA Length", minval=1)
 riskPercentage = input.float(0.5, title="Risk Percentage per Trade", minval=0.1)  // 0.5% risk per trade
 
+// Function 
+f_isBullishEngulfing(first, second) =>
+    (close[first] < open[first] and close[second] > open[second]) and ((open[first] - close[first]) > (close[second] - open[second]) * 0.3)
+
+f_isBearishEngulfing(first, second) =>
+    (close[first] > open[first] and close[second] < open[second]) and ((close[first] - open[first]) > (open[second] - close[second]) * 0.3)
+
+
+
 // 🔵 SMA and EMA
 sma200 = ta.sma(close, smaLength)
 ema21 = ta.ema(close, emaLength)
 
+// 🟠 Calculate Engulfing Patterns START
 // 🔶 Define Engulfing Patterns
 bullishEngulfingFirst = (close[1] < open[1] and close[1] > open[2]) and (close > open and high > high[1] and close > open[1])
 bullishEngulfingSecond = close[3] < open[3] and (close[2] > open[2] and high[2] > high[3] and close[2] > open[3])
@@ -28,10 +38,10 @@ bearishConditionFirst = (close[1] - open[1]) > (open - close) * 0.3
 bearishConditionSecond = (close[3] - open[3]) > (open[2] - close[2]) * 0.3
 
 // 🟢 Buy condition
-buySignal = bullishEngulfingFirst and bullishEngulfingSecond and close > ema21 and bullishConditionFirst and bullishConditionSecond
+buySignalContinueEngulfing = bullishEngulfingFirst and bullishEngulfingSecond and close > ema21 and (bullishConditionFirst or bullishConditionSecond)
 
 // 🔴 Sell condition
-sellSignal = bearishEngulfingFirst and bearishEngulfingSecond and close < ema21
+sellSignalContinueEngulfing = bearishEngulfingFirst and bearishEngulfingSecond and close < ema21 and (bearishConditionFirst or bearishConditionSecond)
 
 // 🟡 Calculate Stop Loss and Take Profit
 stopLossBuy = ta.lowest(low, 4)  // Lowest Stop Loss in the last 4 candles (Buy)
@@ -43,6 +53,20 @@ takeProfitSell = close - (stopLossSell - close) * 2  // R:R = 2:1 for Sell
 // 🟣 Calculate Position Size
 positionSizeBuy = (riskPercentage / 100) * strategy.equity / (close - stopLossBuy)
 positionSizeSell = (riskPercentage / 100) * strategy.equity / (stopLossSell - close)
+
+// 🟠 Calculate Engulfing Patterns END
+// bullishEngulfingFirst = (close[5] < open[5] and close[4] > open[4])
+// bullishEngulfingSecond
+// bullishConditionThird
+// 🟠 Calculate 3 pairs Engulfing Patterns START
+
+
+// 🟠 Calculate 3 pairs Engulfing Patterns END
+
+
+// 🟠 Buy/Sell Signals
+buySignal = buySignalContinueEngulfing
+sellSignal = sellSignalContinueEngulfing
 
 // ✅ Execute Trades
 if buySignal
