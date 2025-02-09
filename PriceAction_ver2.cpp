@@ -1,10 +1,4 @@
 //@version=5
-// 📌 This script is an improved version of the PriceAction_ver1 script
-// 📌 It uses the same logic as PriceAction_ver1 but with additional features
-// 📌 It includes alerts for Buy/Sell signals and position size calculation
-// 📌 It also includes the ability to draw Buy/Sell signals on the chart
-// 📌 The script is designed to work on the 1H timeframe for Forex pairs and 4H timeframe for Crypto pairs
-
 strategy("PriceAction_ver2 by Zhangjingyi", overlay=true, default_qty_type=strategy.percent_of_equity, default_qty_value=100)
 
 // 🟢 Input 
@@ -12,90 +6,81 @@ smaLength = input.int(200, title="SMA Length", minval=1)
 emaLength = input.int(21, title="EMA Length", minval=1)
 riskPercentage = input.float(0.5, title="Risk Percentage per Trade", minval=0.1)  // 0.5% risk per trade
 
-// Function 
-f_isBullishEngulfing(first, second) =>
-    (close[first] < open[first] and close[second] > open[second]) and ((open[first] - close[first]) > (close[second] - open[second]) * 0.3)
-
-f_isBearishEngulfing(first, second) =>
-    (close[first] > open[first] and close[second] < open[second]) and ((close[first] - open[first]) > (open[second] - close[second]) * 0.3)
-
-
-
 // 🔵 SMA and EMA
 sma200 = ta.sma(close, smaLength)
 ema21 = ta.ema(close, emaLength)
 
-// 🟠 Calculate Engulfing Patterns START
-// 🔶 Define Engulfing Patterns
-bullishEngulfingFirst = (close[1] < open[1] and close[1] > open[2]) and (close > open and high > high[1] and close > open[1])
-bullishEngulfingSecond = close[3] < open[3] and (close[2] > open[2] and high[2] > high[3] and close[2] > open[3])
-bullishConditionFirst = (open[1] - close[1]) > (close - open) * 0.3
-bullishConditionSecond = (open[3] - close[3]) > (close[2] - open[2]) * 0.3
+// 🟠 Define Engulfing Patterns
+bullishEngulfingFirst = (close[1] < open[1] and close[1] > open[2]) and (close > open and close > open[1])
+bullishEngulfingSecond = close[3] < open[3] and (close[2] > open[2] and close[2] > open[3])
+bearishEngulfingFirst = (close[1] > open[1] and close[1] < open[2]) and (close < open and close < open[1])
+bearishEngulfingSecond = close[3] > open[3] and close[2] < open[2] and close[2] < open[3]
 
-bearishEngulfingFirst = (close[1] > open[1] and close[1] < open[2]) and (close < open and close < open[1] and open > close[1])
-bearishEngulfingSecond = close[3] > open[3] and close[2] < open[2] and close[2] < open[3] and open[2] > close[3]
-bearishConditionFirst = (close[1] - open[1]) > (open - close) * 0.3
-bearishConditionSecond = (close[3] - open[3]) > (open[2] - close[2]) * 0.3
+// 🟢 Buy/Sell conditions
+buySignalContinueEngulfing = bullishEngulfingFirst and bullishEngulfingSecond and close > ema21
+sellSignalContinueEngulfing = bearishEngulfingFirst and bearishEngulfingSecond and close < ema21
 
-// 🟢 Buy condition
-buySignalContinueEngulfing = bullishEngulfingFirst and bullishEngulfingSecond and close > ema21 and (bullishConditionFirst or bullishConditionSecond)
+// 🟠 Define 3 Pairs Engulfing Patterns
+bullishPairFirst = close[5] < open[5] and close[4] > open[4] and close[4] > open[5]
+bearishPairSecond = close[3] > open[3] and close[2] < open[2] and close[2] < open[3]
+bullishPairThird = close[1] < open[1] and close > open and close > open[2] 
 
-// 🔴 Sell condition
-sellSignalContinueEngulfing = bearishEngulfingFirst and bearishEngulfingSecond and close < ema21 and (bearishConditionFirst or bearishConditionSecond)
+bearishPairFirst = close[5] > open[5] and close[4] < open[4]  and close[4] < open[5]
+bullishPairSecond = close[3] < open[3] and close[2] > open[2] and close[2] > open[3]
+bearishPairThird = close[1] > open[1] and close < open and close < open[2]
+
+// 🟢 Buy/Sell conditions for 3 Pairs
+buySignal3PairsEngulfing = bullishPairFirst and bearishPairSecond and bullishPairThird 
+sellSignal3PairsEngulfing = bearishPairFirst and bullishPairSecond and bearishPairThird
 
 // 🟡 Calculate Stop Loss and Take Profit
-stopLossBuy = ta.lowest(low, 4)  // Lowest Stop Loss in the last 4 candles (Buy)
-stopLossSell = ta.highest(high, 4)  // Highest Stop Loss in the last 4 candles (Sell)
+stopLossBuy = ta.lowest(low, 4)  // SL for buySignalContinueEngulfing
+stopLossSell = ta.highest(high, 4)  // SL for sellSignalContinueEngulfing
 
-takeProfitBuy = close + (close - stopLossBuy) * 2  // R:R = 2:1 for Buy
-takeProfitSell = close - (stopLossSell - close) * 2  // R:R = 2:1 for Sell
+stopLossBuy3Pairs = ta.lowest(low, 4)  // SL for buySignal3PairsEngulfing
+stopLossSell3Pairs = ta.highest(high, 2)  // SL for sellSignal3PairsEngulfing
+
+// Take Profit (TP = 2x SL)
+takeProfitBuy = close + (close - stopLossBuy) * 2
+takeProfitSell = close - (stopLossSell - close) * 2
+takeProfitBuy3Pairs = close + (close - stopLossBuy3Pairs) * 2
+takeProfitSell3Pairs = close - (stopLossSell3Pairs - close) * 2
 
 // 🟣 Calculate Position Size
 positionSizeBuy = (riskPercentage / 100) * strategy.equity / (close - stopLossBuy)
 positionSizeSell = (riskPercentage / 100) * strategy.equity / (stopLossSell - close)
+positionSizeBuy3Pairs = (riskPercentage / 100) * strategy.equity / (close - stopLossBuy3Pairs)
+positionSizeSell3Pairs = (riskPercentage / 100) * strategy.equity / (stopLossSell3Pairs - close)
 
-// 🟠 Calculate Engulfing Patterns END
-// bullishEngulfingFirst = (close[5] < open[5] and close[4] > open[4])
-// bullishEngulfingSecond
-// bullishConditionThird
-// 🟠 Calculate 3 pairs Engulfing Patterns START
-
-
-// 🟠 Calculate 3 pairs Engulfing Patterns END
-
-
-// 🟠 Buy/Sell Signals
-buySignal = buySignalContinueEngulfing
-sellSignal = sellSignalContinueEngulfing
+// 🟠 Avoid Opening New Orders If There Are Active Trades
+isPositionOpen = strategy.position_size != 0
 
 // ✅ Execute Trades
-if buySignal
+if buySignalContinueEngulfing and not isPositionOpen
     strategy.entry("Buy", strategy.long, qty=positionSizeBuy)
     strategy.exit("Take Profit/Stop Loss", "Buy", stop=stopLossBuy, limit=takeProfitBuy)
 
-if sellSignal
+if sellSignalContinueEngulfing and not isPositionOpen
     strategy.entry("Sell", strategy.short, qty=positionSizeSell)
     strategy.exit("Take Profit/Stop Loss", "Sell", stop=stopLossSell, limit=takeProfitSell)
 
-// 🔎 Determine the time frame and asset type (currency pair)
-isH1 = timeframe.period == "60"  // 1H
-isH4 = timeframe.period == "240"  // 4H
+if buySignal3PairsEngulfing and not isPositionOpen  
+    strategy.entry("Buy_3Pairs", strategy.long, qty=positionSizeBuy3Pairs)
+    strategy.exit("Take Profit/Stop Loss", "Buy_3Pairs", stop=stopLossBuy3Pairs, limit=takeProfitBuy3Pairs)
 
-isForex = syminfo.ticker == "GBPUSD" or syminfo.ticker == "EURUSD"
-isCrypto = syminfo.ticker == "ETHUSD" or syminfo.ticker == "BTCUSD" 
-isGold = syminfo.ticker == "XAUUSD"
-// 🔔 Enable alerts only for correct currency pair and timeframe
-enableAlert = (isForex and isH1) or (isCrypto and isH4) or (isGold and isH4)
+if sellSignal3PairsEngulfing and not isPositionOpen
+    strategy.entry("Sell_3Pairs", strategy.short, qty=positionSizeSell3Pairs)
+    strategy.exit("Take Profit/Stop Loss", "Sell_3Pairs", stop=stopLossSell3Pairs, limit=takeProfitSell3Pairs)
 
-// 🔔 Create alerts when there is a Buy/Sell signal
-alertcondition(buySignal and enableAlert, title="BUY Alert", message="BUY Signal on {syminfo.ticker} - {timeframe.period}")
-alertcondition(sellSignal and enableAlert, title="SELL Alert", message="SELL Signal on {syminfo.ticker} - {timeframe.period}")
+// 🔔 Alerts
+alertcondition(buySignalContinueEngulfing or buySignal3PairsEngulfing, title="BUY Alert", message="BUY Signal detected")
+alertcondition(sellSignalContinueEngulfing or sellSignal3PairsEngulfing, title="SELL Alert", message="SELL Signal detected")
 
 // 📍 Show BUY/SELL on chart
-if buySignal and enableAlert
+if (buySignalContinueEngulfing or buySignal3PairsEngulfing) and not isPositionOpen
     label.new(bar_index, high, text="BUY", color=color.green, style=label.style_label_up, textcolor=color.white)
 
-if sellSignal and enableAlert
+if (sellSignalContinueEngulfing or sellSignal3PairsEngulfing) and not isPositionOpen
     label.new(bar_index, low, text="SELL", color=color.red, style=label.style_label_down, textcolor=color.white)
 
 // 📊 Draw SMA and EMA lines
