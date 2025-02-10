@@ -42,7 +42,7 @@ sellSignal3PairsEngulfing = bearishPairFirst and bullishPairSecond and bearishPa
 stopLossBuy = ta.lowest(low, 4)  // SL for buySignalContinueEngulfing
 stopLossSell = ta.highest(high, 4)  // SL for sellSignalContinueEngulfing
 
-stopLossBuy3Pairs = ta.lowest(low, 4)  // SL for buySignal3PairsEngulfing
+stopLossBuy3Pairs = ta.lowest(low, 2)  // SL for buySignal3PairsEngulfing
 stopLossSell3Pairs = ta.highest(high, 2)  // SL for sellSignal3PairsEngulfing
 
 // Take Profit (TP = 2x SL)
