@@ -28,11 +28,11 @@ sellSignalContinueEngulfing = bearishEngulfingFirst and bearishEngulfingSecond a
 // 🟠 Define 3 Pairs Engulfing Patterns
 bullishPairFirst = close[5] < open[5] and close[4] > open[4] and close[4] > open[5]
 bearishPairSecond = close[3] > open[3] and close[2] < open[2] and close[2] < open[3]
-bullishPairThird = close[1] < open[1] and close > open and close > open[2] 
+bullishPairThird = close[1] < open[1] and close > open and close > open[2] and (open[1] - close[1]) > 0.3 * (close - open)
 
 bearishPairFirst = close[5] > open[5] and close[4] < open[4]  and close[4] < open[5]
 bullishPairSecond = close[3] < open[3] and close[2] > open[2] and close[2] > open[3]
-bearishPairThird = close[1] > open[1] and close < open and close < open[2]
+bearishPairThird = close[1] > open[1] and close < open and close < open[2] and (close[1] - open[1]) > 0.3 * (open - close)
 
 // 🟢 Buy/Sell conditions for 3 Pairs
 buySignal3PairsEngulfing = bullishPairFirst and bearishPairSecond and bullishPairThird 
